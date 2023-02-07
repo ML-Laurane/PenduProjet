@@ -115,6 +115,12 @@ int main(int argc, char *argv[]){
 	}
 	printf("Socket placee en ecoute passive ...\n\n\n");
 	
+
+
+	
+
+
+
 	// boucle d’attente de connexion : en théorie, un serveur attend indéfiniment ! 
 	while(1){
 		memset(messageRecu, 0x00, LG_MESSAGE*sizeof(char));
@@ -179,7 +185,7 @@ int main(int argc, char *argv[]){
 					return 0;
 				default:  /* réception de n octets */
 					printf("Message recu :   %s \n\n", messageRecu);
-					
+
 			}
 		}
 	}
