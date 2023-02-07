@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <string.h> /* pour memset */
+#include <stdbool.h>
 #include <netinet/in.h> /* pour struct sockaddr_in */
 #include <arpa/inet.h> /* pour htons et inet_aton */
 
@@ -11,32 +12,60 @@
 
 #define LG_MESSAGE 256
 
-#define motClair = "bonjour"
-#define motCache = "_______"
+#define LG_MOT 7
 
-void lireLettre(char* lettre){
+// void lireLettre(char* lettre){
     // reçoit la lettre du joueur
-	FILE *fpipe;
+	// FILE *fpipe;
 	
-	fpipe = popen("lettre '+%X'","r");
-	if (fpipe == NULL){
-    	perror("popen");
-    	exit(-1);
-  	}
-	fgets(lettre, LG_MESSAGE, fpipe);
-	pclose(fpipe);
-}
+	// fpipe = popen("lettre'+%X'","r");
+	// if (fpipe == NULL){
+    // 	perror("popen");
+    // 	exit(-1);
+  	// }
+	// fgets(lettre, LG_MESSAGE, fpipe);
+	// pclose(fpipe);
+// }
 
 // bool lettreDejaChoisie(char* lettre){
 //     // si la lettre a déjà été choisie par le joueur, renvoie true, sinon renvoie false
 // }
 
-// bool verifLettre(char* lettre){
-// 	// si la lettre est présente dans le mot caché renvoie true, sinon renvoie false
+
+// void affichage(){
+	//  // affichage du jeu
 // }
 
-// void cacheMot(char* lettre){
+void placeLettre(char* lettre){
+	// place la lettre dans le mot caché
+	
+}
+
+bool verifLettre(char* lettre){
+	// si la lettre est présente dans le mot caché renvoie true, sinon renvoie false
+	if (strlen(lettre) != 1){
+		printf("Une seule lettre souhaitée");
+		perror("longueur");
+		return false;
+	}
+	else if (!((65 <= *lettre) && (*lettre <= 90)) || !((97 <= *lettre) && (*lettre <= 122))){
+		printf("Une seule lettre souhaitée");
+		perror("longueur");
+		return false;
+	}
+	return true;
+}
+
+// void convertirMot(char* motClair, char motCache []){
 // 	// cree le mot caché : exemple avec "bonjour" en mot clair, mot cache = "_______"
+// 	int longueurMot = strlen(motClair);
+// 	// char motCache[longueurMot];
+
+// 	for (int i = 0; i < longueurMot; i++){
+// 		motCache[i] = '_';
+// 	}
+// 	printf(" motCache ===========> %s!\n\n", motCache);
+// 	// return motCache;
 // }
 
 int main(int argc, char *argv[]){
@@ -50,7 +79,11 @@ int main(int argc, char *argv[]){
 	char messageRecu[LG_MESSAGE];
 	char messageEnvoi[LG_MESSAGE];
 	int ecrits, lus; /* nb d’octets ecrits et lus */
-	int retour;
+	// int retour;
+
+	char motClair [LG_MOT+1] = {'b', 'o', 'n', 'j', 'o', 'u', 'r'};
+	char motCache [LG_MOT+1];
+	bool jeuActif = false; 
 
 	// Crée un socket de communication
 	socketEcoute = socket(PF_INET, SOCK_STREAM, 0); 
@@ -80,7 +113,7 @@ int main(int argc, char *argv[]){
    		perror("listen");
    		exit(-3);
 	}
-	printf("Socket placee en ecoute passive ...\n");
+	printf("Socket placee en ecoute passive ...\n\n\n");
 	
 	// boucle d’attente de connexion : en théorie, un serveur attend indéfiniment ! 
 	while(1){
@@ -96,43 +129,58 @@ int main(int argc, char *argv[]){
    			exit(-4);
 		}
 		
-		// On réception les données du client (cf. protocole)
-		lus = read(socketDialogue, messageRecu, LG_MESSAGE*sizeof(char)); // ici appel bloquant
-		switch(lus) {
-			case -1 : /* une erreur ! */ 
-				  perror("read"); 
-				  close(socketDialogue); 
-				  exit(-5);
-			case 0  : /* la socket est fermée */
-				  fprintf(stderr, "La socket a ete fermee par le client !\n\n");
-   				  close(socketDialogue);
-   				  return 0;
-			default:  /* réception de n octets */
-				  printf("Message reçu : %s (%d octets)\n\n", messageRecu, lus);
-		}
+		printf("Client connecte\n\n");
 
 		// Déterminer le message à envoyer en fonction de la demande du client
-		if(strlen(messageRecu) == 1)
-			lireLettre(messageEnvoi);
-		else
-			sprintf(messageEnvoi, "Commande non reconnue");
+		// if(strlen(messageRecu) == 1)
+		// 	lireLettre(messageEnvoi);
+		// else
+		// 	sprintf(messageEnvoi, "Commande non reconnue");
 
 
-		// On envoie des données vers le client (cf. protocole)
-		ecrits = write(socketDialogue, messageEnvoi, strlen(messageEnvoi)); 
-		switch(ecrits){
-			case -1 : /* une erreur ! */
-				  perror("write");
-   				  close(socketDialogue);
-   				  exit(-6);
-			case 0 :  /* la socket est fermée */
-				  fprintf(stderr, "La socket a été fermee par le client !\n\n");
-				  close(socketDialogue);
-				  return 0;
-			default:  /* envoi de n octets */
-   				  printf("Message %s envoye (%d octets)\n\n", messageEnvoi, ecrits);
-				  // On ferme la socket de dialogue et on se replace en attente ...
-   				  close(socketDialogue);
+		// Au lancemant du serveur, on envoit start 7, 7 correspond à la longueur du mot à deviner
+		if (!(jeuActif)){
+			
+			int longueurMot = strlen(motClair);
+			for (int i = 0; i < longueurMot; i++){
+				motCache[i] = '_';
+			}
+
+			strcpy(messageEnvoi, motCache);
+
+			ecrits = write(socketDialogue, messageEnvoi, strlen(messageEnvoi)); 
+			switch(ecrits){
+				case -1 : /* une erreur ! */
+					perror("write");
+					close(socketDialogue);
+					exit(-6);
+				case 0 :  /* la socket est fermée */
+					fprintf(stderr, "La socket a été fermee par le client !\n\n");
+					close(socketDialogue);
+					return 0;
+				default:  /* envoi de n octets */
+					printf("Message envoye :   %s\n\n", messageEnvoi);
+					jeuActif = true;
+					// On ferme la socket de dialogue et on se replace en attente ...
+					close(socketDialogue);
+			}
+		} else {
+			// On réceptionne les données du client (cf. protocole)
+			// lus = nbre d'octets
+			lus = read(socketDialogue, messageRecu, LG_MESSAGE*sizeof(char)); // ici appel bloquant
+			switch(lus) {
+				case -1 : /* une erreur ! */ 
+					perror("read"); 
+					close(socketDialogue); 
+					exit(-5);
+				case 0  : /* la socket est fermée */
+					fprintf(stderr, "La socket a ete fermee par le client !\n\n");
+					close(socketDialogue);
+					return 0;
+				default:  /* réception de n octets */
+					printf("Message recu :   %s \n\n", messageRecu);
+					
+			}
 		}
 	}
 	// On ferme la ressource avant de quitter
