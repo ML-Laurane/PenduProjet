@@ -53,7 +53,6 @@ void placeLettre(char* lettre, char* motClair, char* motCache){
 			motCache[i] = lettre[0];
 		}
 	}
-	printf("Motcache dans la fonction : %s", motCache);
 }
 
 bool verifLettre(char* lettre){
