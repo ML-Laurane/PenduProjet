@@ -95,19 +95,18 @@ int main(int argc, char *argv[]){
 	int maxClients = 2;
 	int clientSocket[2];
 	int opt = 1;
-	int max_sd, sd, activity, newSocket, addrlen;
-	char message = "LALALALALALA";
+	int max_sd, activity, newSocket, addrlen, valread ;
 
 	fd_set readfds;
 	
-
 	// char motClair [LG_MOT+1] = {'B', 'O', 'N', 'J', 'O', 'U', 'R'};
 	// char motCache [LG_MOT+1];
 	// char lettresChoisies [27];
 	// int compteur = 11;
 	// char codeErreur [100] = "";
 	// bool fini = false;
-
+	
+	strcpy(messageEnvoi, "LALALA");
 
 	for (int i = 0; i < maxClients; i++) {  
 		// initialise tous les clientSocket à 0
@@ -159,7 +158,6 @@ int main(int argc, char *argv[]){
 
 	// boucle d’attente de connexion : 
 	while(1){
-		
 		//clear the socket set 
 		FD_ZERO(&readfds);  
 
@@ -170,15 +168,15 @@ int main(int argc, char *argv[]){
 		//add child sockets to set 
         for (int i = 0 ; i < maxClients ; i++) {  
             //socket descriptor 
-            sd = clientSocket[i];  
+            socketDialogue = clientSocket[i];  
                  
             //if valid socket descriptor then add to read list 
-            if(sd > 0)  
-                FD_SET( sd , &readfds);  
+            if(socketDialogue > 0)  
+                FD_SET( socketDialogue , &readfds);  
                  
             //highest file descriptor number, need it for the select function 
-            if(sd > max_sd)  
-                max_sd = sd;  
+            if(socketDialogue > max_sd)  
+                max_sd = socketDialogue;  
         }  	
 
 		//wait for an activity on one of the sockets , timeout is NULL , 
@@ -192,7 +190,8 @@ int main(int argc, char *argv[]){
 		//If something happened on the master socket , 
         //then its an incoming connection 
         if (FD_ISSET(socketEcoute, &readfds))  {  
-            if ((newSocket = accept(socketEcoute, (struct sockaddr *)&pointDeRencontreLocal, (socklen_t*)&addrlen))<0) {  
+			socketDialogue = accept(socketEcoute, (struct sockaddr *)&pointDeRencontreLocal, &longueurAdresse);
+            if ((socketDialogue < 0)) {  
                 perror("accept");  
                 exit(EXIT_FAILURE);  
             }  
@@ -202,73 +201,104 @@ int main(int argc, char *argv[]){
                   (pointDeRencontreLocal.sin_port));  
            
             //send new connection greeting message 
-            if( send(newSocket, message, strlen(message), 0) != strlen(message) )  {  
-                perror("send");  
-            }  
-                 
-            puts("Welcome message sent successfully");  
-                 
+            ecrits = write(socketDialogue, messageEnvoi, strlen(messageEnvoi));  
+			switch(ecrits){
+				case -1 : /* une erreur ! */
+					perror("write");
+					close(socketDialogue);
+					exit(-6);
+				case 0 :  /* la socket est fermée */
+					fprintf(stderr, "La socket a été fermee par le client !\n\n");
+					close(socketDialogue);
+					return 0;
+				default:  /* envoi de n octets */
+					printf("Message envoye :   %s\n\n", messageEnvoi);
+			}
+			
             //add new socket to array of sockets 
             for (int i = 0; i < maxClients; i++) {  
                 //if position is empty 
                 if( clientSocket[i] == 0 ){  
-                    clientSocket[i] = newSocket;  
-                    printf("Adding to list of sockets as %d\n" , i);
+                    clientSocket[i] = socketDialogue;  
+					printf("efjOZRNJOZnvJoRN ========= %d", clientSocket[i]);
+                    printf("Socket n°%d ajouté à la liste des sockets\n" , i);
                     break;  
                 }  
             }
+		}
 			
-			//else its some IO operation on some other socket
-			for (int i = 0; i < max_clients; i++)  
-			{  
-            sd = client_socket[i];  
+		for (int i = 0; i < maxClients; i++)  {  
+            socketDialogue = clientSocket[i];  
                  
-            if (FD_ISSET( sd , &readfds))  
-            {  
-                //Check if it was for closing , and also read the 
-                //incoming message 
-                if ((valread = read( sd , buffer, 1024)) == 0)  
-                {  
+            if (FD_ISSET( socketDialogue , &readfds)) {  
+                //Check if it was for closing , and also read the incoming message 
+                if ((lus = read(socketDialogue , messageRecu, LG_MESSAGE)) == 0) {  
                     //Somebody disconnected , get his details and print 
-                    getpeername(sd , (struct sockaddr*)&pointDeRencontreLocal , \
+                    getpeername(socketDialogue , (struct sockaddr*)&pointDeRencontreLocal , \
                         (socklen_t*)&addrlen);  
-                    printf("Host disconnected , ip %s , port %d \n" , 
-                          inet_ntoa(pointDeRencontreLocal.sin_addr) , ntohs(pointDeRencontreLocal.sin_port));  
+                    printf("Hote deconnecté, ip %s, port %d\n", inet_ntoa(pointDeRencontreLocal.sin_addr), ntohs(pointDeRencontreLocal.sin_port));  
                          
                     //Close the socket and mark as 0 in list for reuse 
-                    close( sd );  
-                    client_socket[i] = 0;  
+                    close( socketDialogue );  
+                    clientSocket[i] = 0;  
                 }  
                      
                 //Echo back the message that came in 
-                else 
-                {  
+                else {  
                     //set the string terminating NULL byte on the end 
                     //of the data read 
-                    buffer[valread] = '\0';  
-                    send(sd , buffer , strlen(buffer) , 0 );  
+                    messageRecu[lus] = '\0';  
+                    ecrits = write(socketDialogue , messageRecu , strlen(messageRecu));  
+					switch(ecrits){
+						case -1 : /* une erreur ! */
+							perror("write");
+							close(socketDialogue);
+							exit(-6);
+						case 0 :  /* la socket est fermée */
+							fprintf(stderr, "La socket a été fermee par le client !\n\n");
+							close(socketDialogue);
+							return 0;
+						default:  /* envoi de n octets */
+							printf("Message envoye :   %s\n\n", messageEnvoi);
+					}
                 }  
             }  
         }  
-
-
-
-
-
-
-		memset(messageRecu, 0x00, LG_MESSAGE*sizeof(char));
-		printf("Attente d'une demande de connexion (quitter avec Ctrl-C)\n\n");
-		
-		// c’est un appel bloquant
-		socketDialogue = accept(socketEcoute, (struct sockaddr *)&pointDeRencontreDistant, &longueurAdresse);
-		if (socketDialogue < 0) {
-   			perror("accept");
-			close(socketDialogue);
-   			close(socketEcoute);
-   			exit(-4);
+		bzero(messageEnvoi, LG_MESSAGE);
+		if (clientSocket[1] != 0){
+			strcpy(messageEnvoi, "test\n");
+			ecrits = write(clientSocket[0] , messageEnvoi , strlen(messageEnvoi));  
+			switch(ecrits){
+				case -1 : /* une erreur ! */
+					perror("write");
+					close(clientSocket[0]);
+					exit(-6);
+				case 0 :  /* la socket est fermée */
+					fprintf(stderr, "La socket a été fermee par le client !\n\n");
+					close(clientSocket[0]);
+					return 0;
+				default:  /* envoi de n octets */
+					printf("Message envoye :   %s\n\n", messageEnvoi);
+			}
 		}
+
+
+
+
+
+		// memset(messageRecu, 0x00, LG_MESSAGE*sizeof(char));
+		// printf("Attente d'une demande de connexion (quitter avec Ctrl-C)\n\n");
 		
-		printf("Client connecté\n\n");
+		// // c’est un appel bloquant
+		// socketDialogue = accept(socketEcoute, (struct sockaddr *)&pointDeRencontreDistant, &longueurAdresse);
+		// if (socketDialogue < 0) {
+   		// 	perror("accept");
+		// 	close(socketDialogue);
+   		// 	close(socketEcoute);
+   		// 	exit(-4);
+		// }
+		
+		// printf("Client connecté\n\n");
 
 		
 		// // affiche le mot caché au client : "______"

@@ -78,10 +78,20 @@ int main(int argc, char *argv[]){
 	printf("Connexion au serveur %s:%d reussie!\n",ip_dest,port_dest);
 	
 	
-	
-	
 	while(1){
-
+		switch(nb = read(descripteurSocket, messageRecu, LG_MESSAGE)) {
+			case -1 : /* une erreur ! */
+				perror("Erreur de lecture...");
+				close(descripteurSocket);
+				exit(-4);
+			case 0 : /* la socket est fermée */
+				fprintf(stderr, "La socket a ete fermee par le serveur !\n\n");
+				close(descripteurSocket);
+				return 0;
+			default: /* réception de n octets */
+				// messageRecu[nb]='\0';
+				printf("Message reçu du serveur :   %s \n\n", messageRecu);
+		}
 	}
 
 	// bzero(messageRecu, 256);
