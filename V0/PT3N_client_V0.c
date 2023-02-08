@@ -23,6 +23,7 @@ int main(int argc, char *argv[]){
 
 	char ip_dest[16];
 	int  port_dest;
+	
 
     if (argc>1) { // si il y a au moins 2 arguments passés en ligne de commande, récupération ip et port
 		strncpy(ip_dest,argv[1],16);
@@ -75,34 +76,43 @@ int main(int argc, char *argv[]){
 			exit(-4);
 		case 0 : /* la socket est fermée */
    			fprintf(stderr, "La socket a ete fermee par le serveur !\n\n");
+			close(descripteurSocket);
 			return 0;
 		default: /* réception de n octets */
 		  messageRecu[nb]='\0';
-			printf("Message reçu du serveur :   %s \n\n", messageRecu);
+		printf("Message reçu du serveur :   %s \n\n", messageRecu);
 	}	// On ferme la ressource avant de quitter
 
 
-	// if (argv>2) {
- 	// 	// Envoi du message
-	// 	strcpy(messageEnvoi, argv[3]);
-	// 	nb = write(descripteurSocket, messageEnvoi, strlen(messageEnvoi));
-	// 	switch(nb){
-	// 		case -1 : /* une erreur ! */
-	// 				perror("Erreur en ecriture...");
-	// 				close(descripteurSocket);
-	// 				exit(-3);
-	// 		case 0 : /* la socket est fermée */
-	// 			fprintf(stderr, "La socket a ete fermee par le serveur !\n\n");
-	// 			return 0;
-	// 		default: /* envoi de n octets */
-	// 			printf("Message envoye :   %s \n\n", messageEnvoi);
-	// 	}
-	// }
+	// le 1er caractere du message recu = determine si le jeu est terminé ou non
+	// 0 = jeu pas fini
+	// 1 = jeu fini => le client n'envoie plus de lettre
 
+	bool pasFini = true;
+	
 	// boucle d’attente de recevoir les infos du serv 
-	while(1){
+	while(pasFini){
+		if ((messageRecu[0] = '1')){
+			pasFini = false;
+		}
 		
+		printf("Entrez une lettre :  ");
+		scanf("%s", messageEnvoi);
 
+		nb = write(descripteurSocket, messageEnvoi, strlen(messageEnvoi));
+		switch(nb){
+			case -1 : /* une erreur ! */
+				perror("Erreur en ecriture...");
+				close(descripteurSocket);
+				exit(-3);
+			case 0 : /* la socket est fermée */
+				fprintf(stderr, "La socket a ete fermee par le serveur !\n\n");
+				close(descripteurSocket);
+				return 0;
+			default: /* envoi de n octets */
+				printf("Message envoye :   %s \n\n", messageEnvoi);
+				// close(descripteurSocket);
+		}
 	}
 
 	close(descripteurSocket);
