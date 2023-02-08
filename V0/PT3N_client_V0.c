@@ -1,3 +1,13 @@
+/* ##################################################################################
+
+	Groupe : 	Marina Flament
+				Samuel Caron
+				Laurane Mouronval
+	
+	Version 0 - Client 
+
+################################################################################## */
+
 #include <stdio.h>
 #include <stdlib.h> /* pour exit */
 #include <unistd.h> /* pour read, write, close, sleep */
@@ -8,9 +18,7 @@
 #include <netinet/in.h> /* pour struct sockaddr_in */
 #include <arpa/inet.h> /* pour htons et inet_aton */
 
-
 #define LG_MESSAGE 256
-
 
 int main(int argc, char *argv[]){
 	int descripteurSocket;
@@ -23,6 +31,7 @@ int main(int argc, char *argv[]){
 
 	char ip_dest[16];
 	int  port_dest;
+	
 
     if (argc>1) { // si il y a au moins 2 arguments passés en ligne de commande, récupération ip et port
 		strncpy(ip_dest,argv[1],16);
@@ -66,47 +75,72 @@ int main(int argc, char *argv[]){
 	}
 	printf("Connexion au serveur %s:%d reussie!\n",ip_dest,port_dest);
 
-    
-	// Reception des données du serveur
+	bzero(messageRecu, 256);
+
 	switch(nb = read(descripteurSocket, messageRecu, LG_MESSAGE)) {
 		case -1 : /* une erreur ! */
 			perror("Erreur de lecture...");
 			close(descripteurSocket);
 			exit(-4);
 		case 0 : /* la socket est fermée */
-   			fprintf(stderr, "La socket a ete fermee par le serveur !\n\n");
+			fprintf(stderr, "La socket a ete fermee par le serveur !\n\n");
+			close(descripteurSocket);
 			return 0;
 		default: /* réception de n octets */
-		  messageRecu[nb]='\0';
+			// messageRecu[nb]='\0';
 			printf("Message reçu du serveur :   %s \n\n", messageRecu);
-	}	// On ferme la ressource avant de quitter
+	}
 
-
-	// if (argv>2) {
- 	// 	// Envoi du message
-	// 	strcpy(messageEnvoi, argv[3]);
-	// 	nb = write(descripteurSocket, messageEnvoi, strlen(messageEnvoi));
-	// 	switch(nb){
-	// 		case -1 : /* une erreur ! */
-	// 				perror("Erreur en ecriture...");
-	// 				close(descripteurSocket);
-	// 				exit(-3);
-	// 		case 0 : /* la socket est fermée */
-	// 			fprintf(stderr, "La socket a ete fermee par le serveur !\n\n");
-	// 			return 0;
-	// 		default: /* envoi de n octets */
-	// 			printf("Message envoye :   %s \n\n", messageEnvoi);
-	// 	}
-	// }
-
+	bool fini = false;
+	
 	// boucle d’attente de recevoir les infos du serv 
-	while(1){
-		
+	while(!(fini)){
+		bzero(messageEnvoi, 256);
 
+		printf("\nEntrez une lettre :  ");
+		scanf("%s", messageEnvoi);
+
+		nb = write(descripteurSocket, messageEnvoi, LG_MESSAGE);
+		switch(nb){
+			case -1 : /* une erreur ! */
+				perror("Erreur en ecriture...");
+				close(descripteurSocket);
+				exit(-3);
+			case 0 : /* la socket est fermée */
+				fprintf(stderr, "La socket a ete fermee par le serveur !\n\n");
+				close(descripteurSocket);
+				return 0;
+			default: /* envoi de n octets */
+				printf("Message envoye :   %s \n\n", messageEnvoi);
+		}	
+
+		bzero(messageRecu, 256);
+		// Reception des données du serveur
+		switch(nb = read(descripteurSocket, messageRecu, LG_MESSAGE)) {
+			case -1 : /* une erreur ! */
+				perror("Erreur de lecture...");
+				close(descripteurSocket);
+				exit(-4);
+			case 0 : /* la socket est fermée */
+				fprintf(stderr, "La socket a ete fermee par le serveur !\n\n");
+				close(descripteurSocket);
+				return 0;
+			default: /* réception de n octets */
+				if ((strcmp(messageRecu, "gagne")) == 0){
+					fini = true;
+					printf("Vous avez gagné !");
+
+				} else if ((strcmp(messageRecu, "perdu")) == 0){
+					fini = true;
+					printf("Vous avez perdu !");
+				
+				} else {
+					printf("%s", messageRecu);
+				}
+		}	
 	}
 
 	close(descripteurSocket);
 
 	return 0;
 }
-
