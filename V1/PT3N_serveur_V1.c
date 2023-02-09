@@ -95,7 +95,9 @@ int main(int argc, char *argv[]){
 	int maxClients = 2;
 	int clientSocket[2];
 	int opt = 1;
-	int max_sd, activity, newSocket, addrlen, valread ;
+	int i = 0;
+	int max_sd;
+	// , activity, addrlen, valread ;
 
 	fd_set readfds;
 	
@@ -104,18 +106,17 @@ int main(int argc, char *argv[]){
 	// char lettresChoisies [27];
 	// int compteur = 11;
 	// char codeErreur [100] = "";
-	// bool fini = false;
+	bool fini = false;
 	
 	strcpy(messageEnvoi, "LALALA");
-
+	max_sd = socketEcoute;
 	for (int i = 0; i < maxClients; i++) {  
 		// initialise tous les clientSocket à 0
-        clientSocket[i] = 0;  
-    }  
+        clientSocket[i] = 0; 
+    }
 
 	// Crée un socket de communication
 	socketEcoute = socket(PF_INET, SOCK_STREAM, 0); 
-
 	// Teste la valeur renvoyée par l’appel système socket() 
 	if(socketEcoute < 0){
 		perror("socket"); // Affiche le message d’erreur 
@@ -123,13 +124,6 @@ int main(int argc, char *argv[]){
 	}
 	printf("Socket créée avec succès ! (%d)\n", socketEcoute); // On prépare l’adresse d’attachement locale
 
-
-
-	if( setsockopt(socketEcoute, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 ) {  
-        perror("setsockopt");  
-        exit(EXIT_FAILURE);  
-    }  
-    
 	// Remplissage de sockaddrDistant (structure sockaddr_in identifiant le point d'écoute local)
 	longueurAdresse = sizeof(pointDeRencontreLocal);
 
@@ -142,24 +136,19 @@ int main(int argc, char *argv[]){
 		perror("bind");
 		exit(-2); 
 	}
-
-
-	
 	printf("Socket attachee avec succès !\n");
 
-	// On fixe la taille de la file d’attente à 2 (pour les demandes de connexion non encore traitées)
-	if(listen(socketEcoute, 2) < 0){
+	// On fixe la taille de la file d’attente à 5 (pour les demandes de connexion non encore traitées)
+	if(listen(socketEcoute, 5) < 0){
    		perror("listen");
    		exit(-3);
 	}
-	// printf("Socket placee en ecoute passive ...\n\n\n");
-	
+	printf("Socket placee en ecoute passive ...\n\n\n");
 
 
 	// boucle d’attente de connexion : 
 	while(1){
-		//clear the socket set 
-		FD_ZERO(&readfds);  
+		FD_ZERO(&readfds); 
 
 		//add master socket to set 
         FD_SET(socketEcoute, &readfds);  
@@ -179,222 +168,180 @@ int main(int argc, char *argv[]){
                 max_sd = socketDialogue;  
         }  	
 
-		//wait for an activity on one of the sockets , timeout is NULL , 
-        //so wait indefinitely 
-        activity = select( max_sd + 1 , &readfds , NULL , NULL , NULL);  
-       
-        if ((activity < 0) && (errno!=EINTR)) {  
-            printf("select error");  
-        }
-
-		//If something happened on the master socket , 
-        //then its an incoming connection 
-        if (FD_ISSET(socketEcoute, &readfds))  {  
-			socketDialogue = accept(socketEcoute, (struct sockaddr *)&pointDeRencontreLocal, &longueurAdresse);
-            if ((socketDialogue < 0)) {  
-                perror("accept");  
-                exit(EXIT_FAILURE);  
-            }  
-             
-            //inform user of socket number - used in send and receive commands 
-            printf("New connection , socket fd is %d , ip is : %s , port : %d\n" , newSocket , inet_ntoa(pointDeRencontreLocal.sin_addr) , ntohs
-                  (pointDeRencontreLocal.sin_port));  
-           
-            //send new connection greeting message 
-            ecrits = write(socketDialogue, messageEnvoi, strlen(messageEnvoi));  
-			switch(ecrits){
-				case -1 : /* une erreur ! */
-					perror("write");
-					close(socketDialogue);
-					exit(-6);
-				case 0 :  /* la socket est fermée */
-					fprintf(stderr, "La socket a été fermee par le client !\n\n");
-					close(socketDialogue);
-					return 0;
-				default:  /* envoi de n octets */
-					printf("Message envoye :   %s\n\n", messageEnvoi);
-			}
-			
-            //add new socket to array of sockets 
-            for (int i = 0; i < maxClients; i++) {  
-                //if position is empty 
-                if( clientSocket[i] == 0 ){  
-                    clientSocket[i] = socketDialogue;  
-					printf("efjOZRNJOZnvJoRN ========= %d", clientSocket[i]);
-                    printf("Socket n°%d ajouté à la liste des sockets\n" , i);
-                    break;  
-                }  
-            }
+		memset(messageRecu, 0x00, LG_MESSAGE*sizeof(char));
+		printf("Attente d'une demande de connexion (quitter avec Ctrl-C)\n\n");
+		
+		// c’est un appel bloquant
+		socketDialogue = accept(socketEcoute, (struct sockaddr *)&pointDeRencontreDistant, &longueurAdresse);
+		if (socketDialogue < 0) {
+   			perror("accept");
+			close(socketDialogue);
+   			// close(socketEcoute);
+   			exit(-4);
 		}
-			
-		for (int i = 0; i < maxClients; i++)  {  
-            socketDialogue = clientSocket[i];  
-                 
-            if (FD_ISSET( socketDialogue , &readfds)) {  
-                //Check if it was for closing , and also read the incoming message 
-                if ((lus = read(socketDialogue , messageRecu, LG_MESSAGE)) == 0) {  
-                    //Somebody disconnected , get his details and print 
-                    getpeername(socketDialogue , (struct sockaddr*)&pointDeRencontreLocal , \
-                        (socklen_t*)&addrlen);  
-                    printf("Hote deconnecté, ip %s, port %d\n", inet_ntoa(pointDeRencontreLocal.sin_addr), ntohs(pointDeRencontreLocal.sin_port));  
-                         
-                    //Close the socket and mark as 0 in list for reuse 
-                    close( socketDialogue );  
-                    clientSocket[i] = 0;  
-                }  
-                     
-                //Echo back the message that came in 
-                else {  
-                    //set the string terminating NULL byte on the end 
-                    //of the data read 
-                    messageRecu[lus] = '\0';  
-                    ecrits = write(socketDialogue , messageRecu , strlen(messageRecu));  
-					switch(ecrits){
-						case -1 : /* une erreur ! */
-							perror("write");
-							close(socketDialogue);
-							exit(-6);
-						case 0 :  /* la socket est fermée */
-							fprintf(stderr, "La socket a été fermee par le client !\n\n");
-							close(socketDialogue);
-							return 0;
-						default:  /* envoi de n octets */
-							printf("Message envoye :   %s\n\n", messageEnvoi);
-					}
-                }  
-            }  
-        }  
-		bzero(messageEnvoi, LG_MESSAGE);
+
+		
+
+		// ajoute la nouvelle socket
+		for (int i = 0; i < maxClients; i++) {  
+			//client 1 ou client 2
+			if( clientSocket[i] == 0 ){  
+				clientSocket[i] = socketDialogue;  
+				printf("Socket n°%d ajouté à la liste des sockets\n" , i);
+				break;  
+			}  
+		}
+		
+		printf("Client connecté\n\n");
+
+		// tant qu'il n'y a pas 2 joueurs connectés, on ne rentre pas dans la boucle de jeu
 		if (clientSocket[1] != 0){
-			strcpy(messageEnvoi, "test\n");
-			ecrits = write(clientSocket[0] , messageEnvoi , strlen(messageEnvoi));  
-			switch(ecrits){
-				case -1 : /* une erreur ! */
-					perror("write");
-					close(clientSocket[0]);
-					exit(-6);
-				case 0 :  /* la socket est fermée */
-					fprintf(stderr, "La socket a été fermee par le client !\n\n");
-					close(clientSocket[0]);
-					return 0;
-				default:  /* envoi de n octets */
-					printf("Message envoye :   %s\n\n", messageEnvoi);
+			while(!(fini)){
+				// printf("Dans la boucle");
+				bzero(messageEnvoi, LG_MESSAGE);
+
+				sprintf(messageEnvoi, "Joueur %d, à toi de jouer !\n", (i%2)+1);
+				ecrits = write(clientSocket[i%2] , messageEnvoi , strlen(messageEnvoi));  
+				switch(ecrits){
+					case -1 : /* une erreur ! */
+						perror("write");
+						close(clientSocket[i%2]);
+						exit(-6);
+					case 0 :  /* la socket est fermée */
+						fprintf(stderr, "La socket a été fermee par le client TEST!\n\n");
+						close(clientSocket[i%2]);
+						return 0;
+					default:  /* envoi de n octets */
+						printf("Message envoye :   %s\n\n", messageEnvoi);
+				i++;
+				}
 			}
 		}
-
-
-
-
-
-		// memset(messageRecu, 0x00, LG_MESSAGE*sizeof(char));
-		// printf("Attente d'une demande de connexion (quitter avec Ctrl-C)\n\n");
-		
-		// // c’est un appel bloquant
-		// socketDialogue = accept(socketEcoute, (struct sockaddr *)&pointDeRencontreDistant, &longueurAdresse);
-		// if (socketDialogue < 0) {
-   		// 	perror("accept");
-		// 	close(socketDialogue);
-   		// 	close(socketEcoute);
-   		// 	exit(-4);
-		// }
-		
-		// printf("Client connecté\n\n");
-
-		
-		// // affiche le mot caché au client : "______"
-		// int longueurMot = strlen(motClair);
-		// for (int i = 0; i < longueurMot; i++){
-		// 	motCache[i] = '_';
-		// }
-
-		// sprintf(messageEnvoi, "%s  \nLe mot à trouver :  %s", "start 7", motCache);
-
-		// ecrits = write(socketDialogue, messageEnvoi, strlen(messageEnvoi)); 
-		// switch(ecrits){
-		// 	case -1 : /* une erreur ! */
-		// 		perror("write");
-		// 		close(socketDialogue);
-		// 		exit(-6);
-		// 	case 0 :  /* la socket est fermée */
-		// 		fprintf(stderr, "La socket a été fermee par le client !\n\n");
-		// 		close(socketDialogue);
-		// 		return 0;
-		// 	default:  /* envoi de n octets */
-		// 		printf("Message envoye :   %s\n\n", messageEnvoi);
-		// }
-
-
-		// // boucle de jeu 
-		// while(!(fini)){
-		// 	bzero(messageRecu, 256);
-		// 	bzero(codeErreur, 100);
-
-		// 	// le serveur recoit la lettre 
-		// 	switch(lus = read(socketDialogue, messageRecu, LG_MESSAGE)) {
-		// 		case -1 : /* une erreur ! */ 
-		// 			perror("read"); 
-		// 			close(socketDialogue); 
-		// 			exit(-4);
-		// 		case 0  : /* la socket est fermée */
-		// 			fprintf(stderr, "La socket a ete fermee par le client !\n\n");
-		// 			close(socketDialogue);
-		// 			return 0;
-		// 		default:  /* réception de n octets */
-		// 			messageRecu[lus]='\0';
-		// 			printf("Message recu :   %s \n\n", messageRecu);
-		// 	}
-
-		// 	// le serveur fait ses verifications sur la lettre (moteur de jeu)
-		// 	if ((verifLettre(messageRecu))){
-		// 		messageRecu[0] = toupper(messageRecu[0]);
-		// 		lettresChoisies[strlen(lettresChoisies)] = messageRecu[0];
-		// 		lettresChoisies[strlen(lettresChoisies)+1] = '\0';
-
-		// 		if (!(lettreDejaChoisie(lettresChoisies, messageRecu))){
-		// 			if (lettreDansMot(messageRecu, motClair)){
-		// 				placeLettre(messageRecu, motClair, &motCache);
-		// 			} else {
-		// 				compteur--;
-		// 				sprintf(codeErreur, "Raté, il vous reste %d chances !\n", compteur);
-		// 			}
-		// 		}
-		// 	} else {
-		// 		strcpy(codeErreur, "Caractere différent d'une lettre");
-		// 	}
-
-		// 	bzero(messageEnvoi, 256);
-
-		// 	// Etat du jeu : 
-		// 	if (compteur == 0){
-		// 		strcpy(messageEnvoi, "perdu");
-		// 		fini = true;
-		// 	} else if ((jeuGagne(motCache))){
-		// 		strcpy(messageEnvoi, "gagne");
-		// 		fini = true;
-		// 	} else if (strlen(codeErreur)>10) {
-		// 		sprintf(messageEnvoi, "%s\n%s", codeErreur, motCache);
-		// 	} else {
-		// 		strcpy(messageEnvoi, motCache);
-		// 	}
-
-		// 	// le serveur envoie sa réponse pour la lettre + def de l'etat ju jeu
-		// 	ecrits = write(socketDialogue, messageEnvoi, strlen(messageEnvoi)); 
-		// 	switch(ecrits){
-		// 		case -1 : /* une erreur ! */
-		// 			perror("write");
-		// 			close(socketDialogue);
-		// 			exit(-6);
-		// 		case 0 :  /* la socket est fermée */
-		// 			fprintf(stderr, "La socket a été fermee par le client !\n\n");
-		// 			close(socketDialogue);
-		// 			return 0;
-		// 		default:  /* envoi de n octets */
-		// 			printf("Message envoye :   %s\n\n", messageEnvoi);
-					
-		// 	}
-		// }
 	}
-	// On ferme la ressource avant de quitter
-   	close(socketEcoute);
+	close(socketEcoute);
 	return 0; 
 }
+
+
+			// bzero(messageRecu, LG_MESSAGE);
+
+			// lus = read(socketDialogue, messageRecu, strlen(messageRecu)); 
+			// switch(lus){
+			// 	case -1 : /* une erreur ! */
+			// 		perror("read");
+			// 		close(socketDialogue);
+			// 		exit(-6);
+			// 	case 0 :  /* la socket est fermée */
+			// 		fprintf(stderr, "La socket a été fermee par le client TESTEST!\n\n");
+			// 		close(socketDialogue);
+			// 		return 0;
+			// 	default:  /* envoi de n octets */
+			// 		printf("Message recu :   %s\n\n", messageRecu);
+					
+			// }
+
+
+
+
+
+
+		// // memset(messageRecu, 0x00, LG_MESSAGE*sizeof(char));
+		// // printf("Attente d'une demande de connexion (quitter avec Ctrl-C)\n\n");
+		
+		// // printf("Client connecté\n\n");
+
+		
+		// // // affiche le mot caché au client : "______"
+		// // int longueurMot = strlen(motClair);
+		// // for (int i = 0; i < longueurMot; i++){
+		// // 	motCache[i] = '_';
+		// // }
+
+		// // sprintf(messageEnvoi, "%s  \nLe mot à trouver :  %s", "start 7", motCache);
+
+		// // ecrits = write(socketDialogue, messageEnvoi, strlen(messageEnvoi)); 
+		// // switch(ecrits){
+		// // 	case -1 : /* une erreur ! */
+		// // 		perror("write");
+		// // 		close(socketDialogue);
+		// // 		exit(-6);
+		// // 	case 0 :  /* la socket est fermée */
+		// // 		fprintf(stderr, "La socket a été fermee par le client !\n\n");
+		// // 		close(socketDialogue);
+		// // 		return 0;
+		// // 	default:  /* envoi de n octets */
+		// // 		printf("Message envoye :   %s\n\n", messageEnvoi);
+		// // }
+
+
+		// // // boucle de jeu 
+		// // while(!(fini)){
+		// // 	bzero(messageRecu, 256);
+		// // 	bzero(codeErreur, 100);
+
+		// // 	// le serveur recoit la lettre 
+		// // 	switch(lus = read(socketDialogue, messageRecu, LG_MESSAGE)) {
+		// // 		case -1 : /* une erreur ! */ 
+		// // 			perror("read"); 
+		// // 			close(socketDialogue); 
+		// // 			exit(-4);
+		// // 		case 0  : /* la socket est fermée */
+		// // 			fprintf(stderr, "La socket a ete fermee par le client !\n\n");
+		// // 			close(socketDialogue);
+		// // 			return 0;
+		// // 		default:  /* réception de n octets */
+		// // 			messageRecu[lus]='\0';
+		// // 			printf("Message recu :   %s \n\n", messageRecu);
+		// // 	}
+
+		// // 	// le serveur fait ses verifications sur la lettre (moteur de jeu)
+		// // 	if ((verifLettre(messageRecu))){
+		// // 		messageRecu[0] = toupper(messageRecu[0]);
+		// // 		lettresChoisies[strlen(lettresChoisies)] = messageRecu[0];
+		// // 		lettresChoisies[strlen(lettresChoisies)+1] = '\0';
+
+		// // 		if (!(lettreDejaChoisie(lettresChoisies, messageRecu))){
+		// // 			if (lettreDansMot(messageRecu, motClair)){
+		// // 				placeLettre(messageRecu, motClair, &motCache);
+		// // 			} else {
+		// // 				compteur--;
+		// // 				sprintf(codeErreur, "Raté, il vous reste %d chances !\n", compteur);
+		// // 			}
+		// // 		}
+		// // 	} else {
+		// // 		strcpy(codeErreur, "Caractere différent d'une lettre");
+		// // 	}
+
+		// // 	bzero(messageEnvoi, 256);
+
+		// // 	// Etat du jeu : 
+		// // 	if (compteur == 0){
+		// // 		strcpy(messageEnvoi, "perdu");
+		// // 		fini = true;
+		// // 	} else if ((jeuGagne(motCache))){
+		// // 		strcpy(messageEnvoi, "gagne");
+		// // 		fini = true;
+		// // 	} else if (strlen(codeErreur)>10) {
+		// // 		sprintf(messageEnvoi, "%s\n%s", codeErreur, motCache);
+		// // 	} else {
+		// // 		strcpy(messageEnvoi, motCache);
+		// // 	}
+
+		// // 	// le serveur envoie sa réponse pour la lettre + def de l'etat ju jeu
+		// // 	ecrits = write(socketDialogue, messageEnvoi, strlen(messageEnvoi)); 
+		// // 	switch(ecrits){
+		// // 		case -1 : /* une erreur ! */
+		// // 			perror("write");
+		// // 			close(socketDialogue);
+		// // 			exit(-6);
+		// // 		case 0 :  /* la socket est fermée */
+		// // 			fprintf(stderr, "La socket a été fermee par le client !\n\n");
+		// // 			close(socketDialogue);
+		// // 			return 0;
+		// // 		default:  /* envoi de n octets */
+		// // 			printf("Message envoye :   %s\n\n", messageEnvoi);
+					
+		// // 	}
+		// }
+	// }
+	// On ferme la ressource avant de quitter
