@@ -197,7 +197,8 @@ int main(int argc, char *argv[]){
 		// tant qu'il n'y a pas 2 joueurs connectés, on ne rentre pas dans la boucle de jeu
 		if (clientSocket[1] != 0){
 			while(!(fini)){
-				// printf("Dans la boucle");
+				
+				// le serveur envoie un message au joueur quand c'est son tour
 				bzero(messageEnvoi, LG_MESSAGE);
 
 				sprintf(messageEnvoi, "Joueur %d, à toi de jouer !\n", (i%2)+1);
@@ -213,8 +214,27 @@ int main(int argc, char *argv[]){
 						return 0;
 					default:  /* envoi de n octets */
 						printf("Message envoye :   %s\n\n", messageEnvoi);
+				
+				}
+
+				// le serveur récupère la réponse du joueur et fait evoluer son etat du jeu 
+				bzero(messageRecu, LG_MESSAGE);
+
+				lus = read(clientSocket[i%2] , messageRecu , LG_MESSAGE);  
+				switch(lus){
+					case -1 : /* une erreur ! */
+						perror("read");
+						close(clientSocket[i%2]);
+						exit(-6);
+					case 0 :  /* la socket est fermée */
+						fprintf(stderr, "La socket a été fermee par le client TESTEST!\n\n");
+						close(clientSocket[i%2]);
+						return 0;
+					default:  /* envoi de n octets */
+						printf("Message recu :   %s\n\n", messageRecu);
 				i++;
 				}
+
 			}
 		}
 	}

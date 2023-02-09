@@ -81,27 +81,8 @@ int main(int argc, char *argv[]){
 	
 	// boucle d’attente de recevoir les infos du serv 
 	while(!(fini)){
-		bzero(messageEnvoi, 256);
-
-		printf("\nEntrez une lettre :  ");
-		scanf("%s", messageEnvoi);
-
-		strcpy(messageEnvoi, "salut");
-
-		nb = write(descripteurSocket, messageEnvoi, LG_MESSAGE);
-		switch(nb){
-			case -1 : /* une erreur ! */
-				perror("Erreur en ecriture...");
-				close(descripteurSocket);
-				exit(-3);
-			case 0 : /* la socket est fermée */
-				fprintf(stderr, "La socket a ete fermee par le serveur TEST!\n\n");
-				close(descripteurSocket);
-				return 0;
-			default: /* envoi de n octets */
-				printf("Message envoye :   %s \n\n", messageEnvoi);
-		}	
-
+		
+		// le client recoit un message quand c'est son tour
 		bzero(messageRecu, 256);
 		// Reception des données du serveur
 		switch(nb = read(descripteurSocket, messageRecu, LG_MESSAGE)) {
@@ -126,6 +107,24 @@ int main(int argc, char *argv[]){
 				// } else {
 				// 	printf("%s", messageRecu);
 				// }
+		}	
+		bzero(messageEnvoi, 256);
+
+		printf("\nEntrez une lettre :  ");
+		scanf("%s", messageEnvoi);
+
+		nb = write(descripteurSocket, messageEnvoi, LG_MESSAGE);
+		switch(nb){
+			case -1 : /* une erreur ! */
+				perror("Erreur en ecriture...");
+				close(descripteurSocket);
+				exit(-3);
+			case 0 : /* la socket est fermée */
+				fprintf(stderr, "La socket a ete fermee par le serveur TEST!\n\n");
+				close(descripteurSocket);
+				return 0;
+			default: /* envoi de n octets */
+				printf("Message envoye :   %s \n\n", messageEnvoi);
 		}	
 	}
 
