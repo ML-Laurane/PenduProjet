@@ -12,7 +12,8 @@ Pour lancer cette version :
      gcc PT3N_client_V0.c -o client 
      ./client 127.0.0.1 5050
        
-
+<br>
+<br>
 
 # Version 1
 Pour lancer cette version : 
