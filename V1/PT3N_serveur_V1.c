@@ -275,11 +275,11 @@ int main(int argc, char *argv[]){
 					bzero(messageRecu, 256);
 					// Etat du jeu : 
 					if (tabCompteur[i%2] == 0){
-						sprintf(messageEnvoi, "Joueur %d a perdu\n", i%2);
+						sprintf(messageEnvoi, "Joueur %d a perdu, le mot était : %s\n", i%2, motClair);
 						fini = true;
 
 					} else if ((jeuGagne(motCacheJ1))){
-						sprintf(messageEnvoi, "Joueur %d a gagne\n", i%2);
+						sprintf(messageEnvoi, "Joueur %d a gagne, le mot était : %s\n", i%2, motClair);
 						fini = true;
 
 					} else if (strlen(codeErreur)>20) {
@@ -391,11 +391,11 @@ int main(int argc, char *argv[]){
 					bzero(messageRecu, 256);
 					// Etat du jeu : 
 					if (tabCompteur[i%2] == 0){
-						sprintf(messageEnvoi, "Joueur %d a perdu\n", i%2);
+						sprintf(messageEnvoi, "Joueur %d a perdu, le mot était : %s\n", i%2, motClair);
 						fini = true;
 
 					} else if ((jeuGagne(motCacheJ1))){
-						sprintf(messageEnvoi, "Joueur %d a gagne\n", i%2);
+						sprintf(messageEnvoi, "Joueur %d a gagne, le mot était : %s\n", i%2, motClair);
 						fini = true;
 
 					} else if (strlen(codeErreur)>10) {
@@ -418,7 +418,7 @@ int main(int argc, char *argv[]){
 						default:  /* envoi de n octets */
 							printf("%s\n\n", messageEnvoi);	
 					}
-					
+
 				}
 				i++;
 			}
