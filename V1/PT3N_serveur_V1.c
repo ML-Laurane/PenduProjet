@@ -26,10 +26,10 @@
 #define LG_MOT 7
 
 
-bool lettreDejaChoisie(char* lettresChoisies, char* lettre){
+bool lettreDejaChoisie(char *lettresChoisies, char* lettre){
     // si la lettre a déjà été choisie par le joueur, renvoie true, sinon renvoie false
-	for (int i = 0; i < strlen(lettresChoisies); i++){
-		if ((lettre[0] == lettresChoisies[i])){
+	for (int j = 0; j < strlen(lettresChoisies); j++){
+		if ((lettre[0] == lettresChoisies[j])){
 			return false;
 		}
 	}
@@ -39,19 +39,19 @@ bool lettreDejaChoisie(char* lettresChoisies, char* lettre){
 
 bool jeuGagne(char* motCache){
 	// renvoie true si le joueur a deviné toute les lettres, false sinon
-	for (int i = 0; i < strlen(motCache); i++){
-		if ((motCache[i] == '_')){
+	for (int j = 0; j < strlen(motCache); j++){
+		if ((motCache[j] == '_')){
 			return false;
 		}
 	}
 	return true;
 }
 
-void placeLettre(char* lettre, char* motClair, char* motCache){
+void placeLettre(char* lettre, char* motClair, char *motCache){
 	// place la lettre proposée par le joueur dans le mot caché
-	for (int i = 0; i < strlen(motClair); i++){
-		if ((lettre[0] == motClair[i])){
-			motCache[i] = lettre[0];
+	for (int j = 0; j < strlen(motClair); j++){
+		if ((lettre[0] == motClair[j])){
+			motCache[j] = lettre[0];
 		}
 	}
 }
@@ -68,14 +68,13 @@ bool verifLettre(char* lettre){
 bool lettreDansMot(char* lettre, char* motClair){
 	// renvoie true si la lettre est dans le mot, false sinon
 	int longueurMot = strlen(motClair);
-	for (int i = 0; i < longueurMot; i++){
-		if ((lettre[0] == motClair[i])){
+	for (int j = 0; j < longueurMot; j++){
+		if ((lettre[0] == motClair[j])){
 			return true;
 		}
 	}
 	return false;
 }
-
 
 
 
@@ -91,28 +90,36 @@ int main(int argc, char *argv[]){
 	char messageEnvoi[LG_MESSAGE];
 	int ecrits, lus; /* nb d’octets ecrits et lus */
 
-
 	int maxClients = 2;
 	int clientSocket[2];
 	int opt = 1;
 	int i = 0;
+	int longueur;
 	int max_sd;
-	// , activity, addrlen, valread ;
 
 	fd_set readfds;
 	
-	// char motClair [LG_MOT+1] = {'B', 'O', 'N', 'J', 'O', 'U', 'R'};
-	// char motCache [LG_MOT+1];
-	// char lettresChoisies [27];
-	// int compteur = 11;
-	// char codeErreur [100] = "";
+	char motClair [LG_MOT+1] = {'B', 'O', 'N', 'J', 'O', 'U', 'R'};
+	char motCacheJ1 [LG_MOT+1];
+	char motCacheJ2 [LG_MOT+1];
+	char *tabMotCache[2] = {motCacheJ1, motCacheJ2};
+
+	char lettresChoisiesJ1 [27];
+	char lettresChoisiesJ2 [27];
+	char *tabLettreChoisies[2] = {lettresChoisiesJ1, lettresChoisiesJ2};
+
+	// int compteurJ1 = 11;
+	// int compteurJ2 = 11;
+	int tabCompteur[2] = {11, 11};
+	
+	char codeErreur [100] = "";
 	bool fini = false;
 	
 	strcpy(messageEnvoi, "LALALA");
 	max_sd = socketEcoute;
-	for (int i = 0; i < maxClients; i++) {  
+	for (int j = 0; j < maxClients; j++) {  
 		// initialise tous les clientSocket à 0
-        clientSocket[i] = 0; 
+        clientSocket[j] = 0; 
     }
 
 	// Crée un socket de communication
@@ -155,9 +162,9 @@ int main(int argc, char *argv[]){
         max_sd = socketEcoute; 
 
 		//add child sockets to set 
-        for (int i = 0 ; i < maxClients ; i++) {  
+        for (int j = 0 ; j < maxClients ; j++) {  
             //socket descriptor 
-            socketDialogue = clientSocket[i];  
+            socketDialogue = clientSocket[j];  
                  
             //if valid socket descriptor then add to read list 
             if(socketDialogue > 0)  
@@ -183,25 +190,38 @@ int main(int argc, char *argv[]){
 		
 
 		// ajoute la nouvelle socket
-		for (int i = 0; i < maxClients; i++) {  
+		for (int j = 0; j < maxClients; j++) {  
 			//client 1 ou client 2
-			if( clientSocket[i] == 0 ){  
-				clientSocket[i] = socketDialogue;  
-				printf("Socket n°%d ajouté à la liste des sockets\n" , i);
+			if( clientSocket[j] == 0 ){  
+				clientSocket[j] = socketDialogue;  
+				printf("Socket n°%d ajouté à la liste des sockets\n" , j);
 				break;  
 			}  
 		}
 		
 		printf("Client connecté\n\n");
+		
+		// affiche le mot caché au client : "______"
+		int longueurMot = strlen(motClair);
+		for (int j = 0; j < longueurMot; j++){
+			motCacheJ1[j] = '_';
+			motCacheJ2[j] = '_';
+		}
+
+		printf("MotCachej1 ================== %s\n", motCacheJ1);
+		// printf("tabmotcache de j1 ================== %s\n", tabMotCache[0]);
 
 		// tant qu'il n'y a pas 2 joueurs connectés, on ne rentre pas dans la boucle de jeu
 		if (clientSocket[1] != 0){
 			while(!(fini)){
+
+				
 				
 				// le serveur envoie un message au joueur quand c'est son tour
 				bzero(messageEnvoi, LG_MESSAGE);
+				sprintf(messageEnvoi, "Joueur %d, à toi de jouer !\n Le mot à trouver : %s", (i%2)+1, tabMotCache[i%2]);
 
-				sprintf(messageEnvoi, "Joueur %d, à toi de jouer !\n", (i%2)+1);
+				// sprintf(messageEnvoi, "Joueur %d, à toi de jouer !\n", (i%2)+1);
 				ecrits = write(clientSocket[i%2] , messageEnvoi , strlen(messageEnvoi));  
 				switch(ecrits){
 					case -1 : /* une erreur ! */
@@ -227,71 +247,75 @@ int main(int argc, char *argv[]){
 						close(clientSocket[i%2]);
 						exit(-6);
 					case 0 :  /* la socket est fermée */
-						fprintf(stderr, "La socket a été fermee par le client TESTEST!\n\n");
+						fprintf(stderr, "La socket a été fermee par le client !\n\n");
 						close(clientSocket[i%2]);
 						return 0;
 					default:  /* envoi de n octets */
 						printf("Message recu :   %s\n\n", messageRecu);
-				i++;
+
 				}
 
+				// le serveur fait ses verifications sur la lettre (moteur de jeu)
+				if ((verifLettre(messageRecu))){
+					longueur = strlen(tabLettreChoisies[i%2]);
+					messageRecu[0] = toupper(messageRecu[0]);
+
+					tabLettreChoisies[i%2][longueur] = messageRecu[0];
+					tabLettreChoisies[i%2][longueur+1] = '\0';
+					
+					if (!(lettreDejaChoisie(tabLettreChoisies[i%2], messageRecu))){
+						if (lettreDansMot(messageRecu, motClair)){
+							placeLettre(messageRecu, motClair, &tabMotCache[i%2]);
+						} else {
+							tabCompteur[i%2]--;
+							sprintf(codeErreur, "Raté, il vous reste %d chances !\n", tabCompteur[i%2]);
+						}
+					}
+				} else {
+					strcpy(codeErreur, "Caractere différent d'une lettre");
+				}
+				printf("tabmotcache vide ? ========== > %s\n", tabMotCache[i%2]);
+				bzero(messageEnvoi, 256);
+
+				// Etat du jeu : 
+				if (tabCompteur[i%2] == 0){
+					strcpy(messageEnvoi, "perdu");
+					fini = true;
+
+				} else if ((jeuGagne(tabMotCache[i%2]))){
+					printf("tabmotcache ========= vide ? ========== > %s\n", tabMotCache[i%2]);
+					strcpy(messageEnvoi, "gagne");
+
+					fini = true;
+				} else if (strlen(codeErreur)>10) {
+					sprintf(messageEnvoi, "%s\n%s", codeErreur, tabMotCache[i%2]);
+				} else {
+					strcpy(messageEnvoi, tabMotCache[i%2]);
+				}
+
+				// le serveur envoie sa réponse pour la lettre + def de l'etat ju jeu
+				ecrits = write(clientSocket[i%2], messageEnvoi, strlen(messageEnvoi)); 
+				switch(ecrits){
+					case -1 : /* une erreur ! */
+						perror("write");
+						close(clientSocket[i%2]);
+						exit(-6);
+					case 0 :  /* la socket est fermée */
+						fprintf(stderr, "La socket a été fermee par le client !\n\n");
+						close(clientSocket[i%2]);
+						return 0;
+					default:  /* envoi de n octets */
+						printf("Message envoye :   %s\n\n", messageEnvoi);
+						
+				}
+				
+				i++;
 			}
 		}
 	}
 	close(socketEcoute);
 	return 0; 
 }
-
-
-			// bzero(messageRecu, LG_MESSAGE);
-
-			// lus = read(socketDialogue, messageRecu, strlen(messageRecu)); 
-			// switch(lus){
-			// 	case -1 : /* une erreur ! */
-			// 		perror("read");
-			// 		close(socketDialogue);
-			// 		exit(-6);
-			// 	case 0 :  /* la socket est fermée */
-			// 		fprintf(stderr, "La socket a été fermee par le client TESTEST!\n\n");
-			// 		close(socketDialogue);
-			// 		return 0;
-			// 	default:  /* envoi de n octets */
-			// 		printf("Message recu :   %s\n\n", messageRecu);
-					
-			// }
-
-
-
-
-
-
-		// // memset(messageRecu, 0x00, LG_MESSAGE*sizeof(char));
-		// // printf("Attente d'une demande de connexion (quitter avec Ctrl-C)\n\n");
-		
-		// // printf("Client connecté\n\n");
-
-		
-		// // // affiche le mot caché au client : "______"
-		// // int longueurMot = strlen(motClair);
-		// // for (int i = 0; i < longueurMot; i++){
-		// // 	motCache[i] = '_';
-		// // }
-
-		// // sprintf(messageEnvoi, "%s  \nLe mot à trouver :  %s", "start 7", motCache);
-
-		// // ecrits = write(socketDialogue, messageEnvoi, strlen(messageEnvoi)); 
-		// // switch(ecrits){
-		// // 	case -1 : /* une erreur ! */
-		// // 		perror("write");
-		// // 		close(socketDialogue);
-		// // 		exit(-6);
-		// // 	case 0 :  /* la socket est fermée */
-		// // 		fprintf(stderr, "La socket a été fermee par le client !\n\n");
-		// // 		close(socketDialogue);
-		// // 		return 0;
-		// // 	default:  /* envoi de n octets */
-		// // 		printf("Message envoye :   %s\n\n", messageEnvoi);
-		// // }
 
 
 		// // // boucle de jeu 

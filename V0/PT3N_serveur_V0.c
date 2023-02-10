@@ -37,7 +37,7 @@ bool lettreDejaChoisie(char* lettresChoisies, char* lettre){
 
 
 bool jeuGagne(char* motCache){
-	// renvoie true si le joueur a deviné toute les lettres, false sinon
+	// renvoie true si le joueur a deviné toutes les lettres, false sinon
 	for (int i = 0; i < strlen(motCache); i++){
 		if ((motCache[i] == '_')){
 			return false;

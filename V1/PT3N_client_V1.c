@@ -126,6 +126,32 @@ int main(int argc, char *argv[]){
 			default: /* envoi de n octets */
 				printf("Message envoye :   %s \n\n", messageEnvoi);
 		}	
+
+		bzero(messageRecu, 256);
+		// Reception des données du serveur
+		switch(nb = read(descripteurSocket, messageRecu, LG_MESSAGE)) {
+			case -1 : /* une erreur ! */
+				perror("Erreur de lecture...");
+				close(descripteurSocket);
+				exit(-4);
+			case 0 : /* la socket est fermée */
+				fprintf(stderr, "La socket a ete fermee par le serveur TESTEST!\n\n");
+				close(descripteurSocket);
+				return 0;
+			default: /* réception de n octets */
+				// printf("Message recu : %s\n", messageRecu);
+				if ((strcmp(messageRecu, "gagne")) == 0){
+					fini = true;
+					printf("Vous avez gagné !\n");
+
+				} else if ((strcmp(messageRecu, "perdu")) == 0){
+					fini = true;
+					printf("Vous avez perdu !\n");
+				
+				} else {
+					printf("%s", messageRecu);
+				}
+		}	
 	}
 
 	close(descripteurSocket);
