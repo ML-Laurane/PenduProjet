@@ -2,9 +2,9 @@
 Projet de pendu en C réalisé dans le cadre d'une SAE du 7 fevrier au 10 fevrier.
 
 # Membres du groupe
-Samuel CARON
-Marina FLAMENT 
-Laurane MOURONVAL
+Samuel CARON  <br>
+Marina FLAMENT  <br>
+Laurane MOURONVAL <br>
 
 # Version 0
 Pour lancer cette version : 
