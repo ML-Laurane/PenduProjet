@@ -92,7 +92,6 @@ int main(int argc, char *argv[]){
 
 	int maxClients = 2;
 	int clientSocket[2];
-	int opt = 1;
 	int i = 0;
 	int longueur;
 	int max_sd;
@@ -102,21 +101,17 @@ int main(int argc, char *argv[]){
 	char motClair [LG_MOT+1] = {'B', 'O', 'N', 'J', 'O', 'U', 'R'};
 	char motCacheJ1 [LG_MOT+1];
 	char motCacheJ2 [LG_MOT+1];
-	char *tabMotCache[2] = {motCacheJ1, motCacheJ2};
 
 	char lettresChoisiesJ1 [27];
 	char lettresChoisiesJ2 [27];
-	char *tabLettreChoisies[2] = {lettresChoisiesJ1, lettresChoisiesJ2};
 
-	// int compteurJ1 = 11;
-	// int compteurJ2 = 11;
 	int tabCompteur[2] = {11, 11};
 	
 	char codeErreur [100] = "";
 	bool fini = false;
 	
-	strcpy(messageEnvoi, "LALALA");
-	max_sd = socketEcoute;
+
+	// max_sd = socketEcoute;
 	for (int j = 0; j < maxClients; j++) {  
 		// initialise tous les clientSocket à 0
         clientSocket[j] = 0; 
@@ -183,7 +178,7 @@ int main(int argc, char *argv[]){
 		if (socketDialogue < 0) {
    			perror("accept");
 			close(socketDialogue);
-   			// close(socketEcoute);
+   			close(socketEcoute);
    			exit(-4);
 		}
 
@@ -208,184 +203,243 @@ int main(int argc, char *argv[]){
 			motCacheJ2[j] = '_';
 		}
 
-		printf("MotCachej1 ================== %s\n", motCacheJ1);
-		// printf("tabmotcache de j1 ================== %s\n", tabMotCache[0]);
-
 		// tant qu'il n'y a pas 2 joueurs connectés, on ne rentre pas dans la boucle de jeu
 		if (clientSocket[1] != 0){
+			
 			while(!(fini)){
-
-				
-				
-				// le serveur envoie un message au joueur quand c'est son tour
 				bzero(messageEnvoi, LG_MESSAGE);
-				sprintf(messageEnvoi, "Joueur %d, à toi de jouer !\n Le mot à trouver : %s", (i%2)+1, tabMotCache[i%2]);
-
-				// sprintf(messageEnvoi, "Joueur %d, à toi de jouer !\n", (i%2)+1);
-				ecrits = write(clientSocket[i%2] , messageEnvoi , strlen(messageEnvoi));  
-				switch(ecrits){
-					case -1 : /* une erreur ! */
-						perror("write");
-						close(clientSocket[i%2]);
-						exit(-6);
-					case 0 :  /* la socket est fermée */
-						fprintf(stderr, "La socket a été fermee par le client TEST!\n\n");
-						close(clientSocket[i%2]);
-						return 0;
-					default:  /* envoi de n octets */
-						printf("Message envoye :   %s\n\n", messageEnvoi);
-				
-				}
-
-				// le serveur récupère la réponse du joueur et fait evoluer son etat du jeu 
 				bzero(messageRecu, LG_MESSAGE);
+				bzero(codeErreur, 100);
 
-				lus = read(clientSocket[i%2] , messageRecu , LG_MESSAGE);  
-				switch(lus){
-					case -1 : /* une erreur ! */
-						perror("read");
-						close(clientSocket[i%2]);
-						exit(-6);
-					case 0 :  /* la socket est fermée */
-						fprintf(stderr, "La socket a été fermee par le client !\n\n");
-						close(clientSocket[i%2]);
-						return 0;
-					default:  /* envoi de n octets */
-						printf("Message recu :   %s\n\n", messageRecu);
+				if ((i%2 == 0)){
+					// le serveur envoie un message au joueur quand c'est son tour
+					sprintf(messageEnvoi, "Joueur %d, à toi de jouer !\n Le mot à trouver : %s", 1, motCacheJ1);
 
-				}
-
-				// le serveur fait ses verifications sur la lettre (moteur de jeu)
-				if ((verifLettre(messageRecu))){
-					longueur = strlen(tabLettreChoisies[i%2]);
-					messageRecu[0] = toupper(messageRecu[0]);
-
-					tabLettreChoisies[i%2][longueur] = messageRecu[0];
-					tabLettreChoisies[i%2][longueur+1] = '\0';
+					ecrits = write(clientSocket[i%2] , messageEnvoi , strlen(messageEnvoi));  
+					switch(ecrits){
+						case -1 : /* une erreur ! */
+							perror("write");
+							close(clientSocket[i%2]);
+							exit(-6);
+						case 0 :  /* la socket est fermée */
+							fprintf(stderr, "La socket a été fermee par le client !\n\n");
+							close(clientSocket[i%2]);
+							return 0;
+						default:  /* envoi de n octets */
+							printf("%s\n\n", messageEnvoi);
 					
-					if (!(lettreDejaChoisie(tabLettreChoisies[i%2], messageRecu))){
-						if (lettreDansMot(messageRecu, motClair)){
-							placeLettre(messageRecu, motClair, &tabMotCache[i%2]);
-						} else {
-							tabCompteur[i%2]--;
-							sprintf(codeErreur, "Raté, il vous reste %d chances !\n", tabCompteur[i%2]);
-						}
 					}
-				} else {
-					strcpy(codeErreur, "Caractere différent d'une lettre");
-				}
-				printf("tabmotcache vide ? ========== > %s\n", tabMotCache[i%2]);
-				bzero(messageEnvoi, 256);
 
-				// Etat du jeu : 
-				if (tabCompteur[i%2] == 0){
-					strcpy(messageEnvoi, "perdu");
-					fini = true;
+					// le serveur récupère la réponse du joueur et fait evoluer son etat du jeu 
+					bzero(messageEnvoi, 256);
+					bzero(messageRecu, 256);
 
-				} else if ((jeuGagne(tabMotCache[i%2]))){
-					printf("tabmotcache ========= vide ? ========== > %s\n", tabMotCache[i%2]);
-					strcpy(messageEnvoi, "gagne");
+					lus = read(clientSocket[i%2] , messageRecu , LG_MESSAGE);  
+					switch(lus){
+						case -1 : /* une erreur ! */
+							perror("read");
+							close(clientSocket[i%2]);
+							exit(-6);
+						case 0 :  /* la socket est fermée */
+							fprintf(stderr, "La socket a été fermee par le client !\n\n");
+							close(clientSocket[i%2]);
+							return 0;
+						default:  /* envoi de n octets */
+							printf("%s\n\n", messageRecu);
+					}
 
-					fini = true;
-				} else if (strlen(codeErreur)>10) {
-					sprintf(messageEnvoi, "%s\n%s", codeErreur, tabMotCache[i%2]);
-				} else {
-					strcpy(messageEnvoi, tabMotCache[i%2]);
-				}
+					// le serveur fait ses verifications sur la lettre (moteur de jeu)
+					if ((verifLettre(messageRecu))){
+						longueur = strlen(lettresChoisiesJ1);
+						messageRecu[0] = toupper(messageRecu[0]);
 
-				// le serveur envoie sa réponse pour la lettre + def de l'etat ju jeu
-				ecrits = write(clientSocket[i%2], messageEnvoi, strlen(messageEnvoi)); 
-				switch(ecrits){
-					case -1 : /* une erreur ! */
-						perror("write");
-						close(clientSocket[i%2]);
-						exit(-6);
-					case 0 :  /* la socket est fermée */
-						fprintf(stderr, "La socket a été fermee par le client !\n\n");
-						close(clientSocket[i%2]);
-						return 0;
-					default:  /* envoi de n octets */
-						printf("Message envoye :   %s\n\n", messageEnvoi);
+						lettresChoisiesJ1[longueur] = messageRecu[0];
+						lettresChoisiesJ1[longueur+1] = '\0';
 						
+						if (!(lettreDejaChoisie(lettresChoisiesJ1, messageRecu))){
+							if (lettreDansMot(messageRecu, motClair)){
+								placeLettre(messageRecu, motClair, &motCacheJ1);
+							} else {
+								tabCompteur[i%2]--;
+								sprintf(codeErreur, "Raté, il vous reste %d chances !\n", tabCompteur[i%2]);
+							}
+						} else {
+							strcpy(codeErreur, "Lettre déjà choisie");
+							i--;
+						}
+					} else {
+						strcpy(codeErreur, "Caractère différent d'une lettre");
+					}
+					
+					bzero(messageEnvoi, 256);
+					bzero(messageRecu, 256);
+					// Etat du jeu : 
+					if (tabCompteur[i%2] == 0){
+						sprintf(messageEnvoi, "Joueur %d a perdu\n", i%2);
+						fini = true;
+
+					} else if ((jeuGagne(motCacheJ1))){
+						sprintf(messageEnvoi, "Joueur %d a gagne\n", i%2);
+						fini = true;
+
+					} else if (strlen(codeErreur)>20) {
+						sprintf(messageEnvoi, "%s\n%s\n", codeErreur, motCacheJ1);
+					} else {
+						sprintf(messageEnvoi, "%s\n", motCacheJ1);
+					}
+
+					// le serveur envoie sa réponse pour la lettre + def de l'etat ju jeu
+					ecrits = write(clientSocket[i%2], messageEnvoi, strlen(messageEnvoi)); 
+					switch(ecrits){
+						case -1 : /* une erreur ! */
+							perror("write");
+							close(clientSocket[i%2]);
+							exit(-6);
+						case 0 :  /* la socket est fermée */
+							fprintf(stderr, "La socket a été fermee par le client !\n\n");
+							close(clientSocket[i%2]);
+							return 0;
+						default:  /* envoi de n octets */
+							printf("%s\n\n", messageEnvoi);	
+					}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				} else {
+					// le serveur envoie un message au joueur quand c'est son tour
+					sprintf(messageEnvoi, "Joueur %d, à toi de jouer !\n Le mot à trouver : %s", 2, motCacheJ2);
+
+					// sprintf(messageEnvoi, "Joueur %d, à toi de jouer !\n", (i%2)+1);
+					ecrits = write(clientSocket[i%2] , messageEnvoi , strlen(messageEnvoi));  
+					switch(ecrits){
+						case -1 : /* une erreur ! */
+							perror("write");
+							close(clientSocket[i%2]);
+							exit(-6);
+						case 0 :  /* la socket est fermée */
+							fprintf(stderr, "La socket a été fermee par le client !\n\n");
+							close(clientSocket[i%2]);
+							return 0;
+						default:  /* envoi de n octets */
+							printf("%s\n\n", messageEnvoi);
+					}
+
+					// le serveur récupère la réponse du joueur et fait evoluer son etat du jeu 
+					bzero(messageEnvoi, 256);
+					bzero(messageRecu, 256);
+
+					lus = read(clientSocket[i%2] , messageRecu , LG_MESSAGE);  
+					switch(lus){
+						case -1 : /* une erreur ! */
+							perror("read");
+							close(clientSocket[i%2]);
+							exit(-6);
+						case 0 :  /* la socket est fermée */
+							fprintf(stderr, "La socket a été fermee par le client !\n\n");
+							close(clientSocket[i%2]);
+							return 0;
+						default:  /* envoi de n octets */
+							printf("%s\n\n", messageRecu);
+					}
+					
+					// le serveur fait ses verifications sur la lettre (moteur de jeu)
+					if ((verifLettre(messageRecu))){
+						longueur = strlen(lettresChoisiesJ2);
+						messageRecu[0] = toupper(messageRecu[0]);
+
+						lettresChoisiesJ2[longueur] = messageRecu[0];
+						lettresChoisiesJ2[longueur+1] = '\0';
+						
+						if (!(lettreDejaChoisie(lettresChoisiesJ2, messageRecu))){
+							if (lettreDansMot(messageRecu, motClair)){
+								placeLettre(messageRecu, motClair, &motCacheJ2);
+							} else {
+								tabCompteur[i%2]--;
+								sprintf(codeErreur, "Raté, il vous reste %d chances !\n", tabCompteur[i%2]);
+							}
+						} else {
+							strcpy(codeErreur, "La lettre a déjà été choisie");
+						}
+					} else {
+						strcpy(codeErreur, "Caractere différent d'une lettre\n");
+					}
+
+					bzero(messageEnvoi, 256);
+					bzero(messageRecu, 256);
+					// Etat du jeu : 
+					if (tabCompteur[i%2] == 0){
+						sprintf(messageEnvoi, "Joueur %d a perdu\n", i%2);
+						fini = true;
+
+					} else if ((jeuGagne(motCacheJ1))){
+						sprintf(messageEnvoi, "Joueur %d a gagne\n", i%2);
+						fini = true;
+
+					} else if (strlen(codeErreur)>10) {
+						sprintf(messageEnvoi, "%s\n%s\n", codeErreur, motCacheJ2);
+					} else {
+						sprintf(messageEnvoi, "%s\n", motCacheJ2);
+					}
+
+					// le serveur envoie sa réponse pour la lettre + def de l'etat ju jeu
+					ecrits = write(clientSocket[i%2], messageEnvoi, strlen(messageEnvoi)); 
+					switch(ecrits){
+						case -1 : /* une erreur ! */
+							perror("write");
+							close(clientSocket[i%2]);
+							exit(-6);
+						case 0 :  /* la socket est fermée */
+							fprintf(stderr, "La socket a été fermee par le client !\n\n");
+							close(clientSocket[i%2]);
+							return 0;
+						default:  /* envoi de n octets */
+							printf("%s\n\n", messageEnvoi);	
+					}
+					
 				}
-				
 				i++;
 			}
+		
+			// le serveur envoie sa réponse pour la lettre + def de l'etat ju jeu
+			ecrits = write(clientSocket[i%2+1], messageEnvoi, strlen(messageEnvoi)); 
+			switch(ecrits){
+				case -1 : /* une erreur ! */
+					perror("write");
+					close(clientSocket[i%2+1]);
+					exit(-6);
+				case 0 :  /* la socket est fermée */
+					fprintf(stderr, "La socket a été fermee par le client !\n\n");
+					close(clientSocket[i%2+1]);
+					return 0;
+				default:  /* envoi de n octets */
+					printf("%s\n\n", messageEnvoi);	
+			} 
 		}
+		// close(socketEcoute);
 	}
 	close(socketEcoute);
 	return 0; 
 }
-
-
-		// // // boucle de jeu 
-		// // while(!(fini)){
-		// // 	bzero(messageRecu, 256);
-		// // 	bzero(codeErreur, 100);
-
-		// // 	// le serveur recoit la lettre 
-		// // 	switch(lus = read(socketDialogue, messageRecu, LG_MESSAGE)) {
-		// // 		case -1 : /* une erreur ! */ 
-		// // 			perror("read"); 
-		// // 			close(socketDialogue); 
-		// // 			exit(-4);
-		// // 		case 0  : /* la socket est fermée */
-		// // 			fprintf(stderr, "La socket a ete fermee par le client !\n\n");
-		// // 			close(socketDialogue);
-		// // 			return 0;
-		// // 		default:  /* réception de n octets */
-		// // 			messageRecu[lus]='\0';
-		// // 			printf("Message recu :   %s \n\n", messageRecu);
-		// // 	}
-
-		// // 	// le serveur fait ses verifications sur la lettre (moteur de jeu)
-		// // 	if ((verifLettre(messageRecu))){
-		// // 		messageRecu[0] = toupper(messageRecu[0]);
-		// // 		lettresChoisies[strlen(lettresChoisies)] = messageRecu[0];
-		// // 		lettresChoisies[strlen(lettresChoisies)+1] = '\0';
-
-		// // 		if (!(lettreDejaChoisie(lettresChoisies, messageRecu))){
-		// // 			if (lettreDansMot(messageRecu, motClair)){
-		// // 				placeLettre(messageRecu, motClair, &motCache);
-		// // 			} else {
-		// // 				compteur--;
-		// // 				sprintf(codeErreur, "Raté, il vous reste %d chances !\n", compteur);
-		// // 			}
-		// // 		}
-		// // 	} else {
-		// // 		strcpy(codeErreur, "Caractere différent d'une lettre");
-		// // 	}
-
-		// // 	bzero(messageEnvoi, 256);
-
-		// // 	// Etat du jeu : 
-		// // 	if (compteur == 0){
-		// // 		strcpy(messageEnvoi, "perdu");
-		// // 		fini = true;
-		// // 	} else if ((jeuGagne(motCache))){
-		// // 		strcpy(messageEnvoi, "gagne");
-		// // 		fini = true;
-		// // 	} else if (strlen(codeErreur)>10) {
-		// // 		sprintf(messageEnvoi, "%s\n%s", codeErreur, motCache);
-		// // 	} else {
-		// // 		strcpy(messageEnvoi, motCache);
-		// // 	}
-
-		// // 	// le serveur envoie sa réponse pour la lettre + def de l'etat ju jeu
-		// // 	ecrits = write(socketDialogue, messageEnvoi, strlen(messageEnvoi)); 
-		// // 	switch(ecrits){
-		// // 		case -1 : /* une erreur ! */
-		// // 			perror("write");
-		// // 			close(socketDialogue);
-		// // 			exit(-6);
-		// // 		case 0 :  /* la socket est fermée */
-		// // 			fprintf(stderr, "La socket a été fermee par le client !\n\n");
-		// // 			close(socketDialogue);
-		// // 			return 0;
-		// // 		default:  /* envoi de n octets */
-		// // 			printf("Message envoye :   %s\n\n", messageEnvoi);
-					
-		// // 	}
-		// }
-	// }
-	// On ferme la ressource avant de quitter

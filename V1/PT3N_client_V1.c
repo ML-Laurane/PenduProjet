@@ -83,6 +83,7 @@ int main(int argc, char *argv[]){
 	while(!(fini)){
 		
 		// le client recoit un message quand c'est son tour
+		bzero(messageEnvoi, 256);
 		bzero(messageRecu, 256);
 		// Reception des données du serveur
 		switch(nb = read(descripteurSocket, messageRecu, LG_MESSAGE)) {
@@ -91,25 +92,15 @@ int main(int argc, char *argv[]){
 				close(descripteurSocket);
 				exit(-4);
 			case 0 : /* la socket est fermée */
-				fprintf(stderr, "La socket a ete fermee par le serveur TESTEST!\n\n");
+				fprintf(stderr, "La socket a ete fermee par le serveur !\n\n");
 				close(descripteurSocket);
 				return 0;
 			default: /* réception de n octets */
-				printf("Message recu : %s\n", messageRecu);
-				// if ((strcmp(messageRecu, "gagne")) == 0){
-				// 	fini = true;
-				// 	printf("Vous avez gagné !");
-
-				// } else if ((strcmp(messageRecu, "perdu")) == 0){
-				// 	fini = true;
-				// 	printf("Vous avez perdu !");
-				
-				// } else {
-				// 	printf("%s", messageRecu);
-				// }
+				printf("%s\n", messageRecu);
 		}	
-		bzero(messageEnvoi, 256);
 
+		bzero(messageEnvoi, 256);
+		bzero(messageRecu, 256);
 		printf("\nEntrez une lettre :  ");
 		scanf("%s", messageEnvoi);
 
@@ -123,10 +114,11 @@ int main(int argc, char *argv[]){
 				fprintf(stderr, "La socket a ete fermee par le serveur TEST!\n\n");
 				close(descripteurSocket);
 				return 0;
-			default: /* envoi de n octets */
-				printf("Message envoye :   %s \n\n", messageEnvoi);
+			// default: /* envoi de n octets */
+			// 	printf("%s \n\n", messageEnvoi);
 		}	
 
+		bzero(messageEnvoi, 256);
 		bzero(messageRecu, 256);
 		// Reception des données du serveur
 		switch(nb = read(descripteurSocket, messageRecu, LG_MESSAGE)) {
@@ -135,26 +127,21 @@ int main(int argc, char *argv[]){
 				close(descripteurSocket);
 				exit(-4);
 			case 0 : /* la socket est fermée */
-				fprintf(stderr, "La socket a ete fermee par le serveur TESTEST!\n\n");
+				fprintf(stderr, "La socket a ete fermee par le serveur !\n\n");
 				close(descripteurSocket);
 				return 0;
 			default: /* réception de n octets */
 				// printf("Message recu : %s\n", messageRecu);
-				if ((strcmp(messageRecu, "gagne")) == 0){
+				if (messageRecu[6] == ' '){
 					fini = true;
-					printf("Vous avez gagné !\n");
+					printf("%s\n", messageRecu);
 
-				} else if ((strcmp(messageRecu, "perdu")) == 0){
-					fini = true;
-					printf("Vous avez perdu !\n");
-				
 				} else {
 					printf("%s", messageRecu);
 				}
-		}	
+		}
 	}
 
 	close(descripteurSocket);
-
 	return 0;
 }
