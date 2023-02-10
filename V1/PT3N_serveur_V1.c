@@ -196,7 +196,7 @@ int main(int argc, char *argv[]){
 		
 		printf("Client connecté\n\n");
 		
-		// affiche le mot caché au client : "______"
+		// initialise les mot cahcé des 2 clients : "______"
 		int longueurMot = strlen(motClair);
 		for (int j = 0; j < longueurMot; j++){
 			motCacheJ1[j] = '_';
@@ -206,14 +206,16 @@ int main(int argc, char *argv[]){
 		// tant qu'il n'y a pas 2 joueurs connectés, on ne rentre pas dans la boucle de jeu
 		if (clientSocket[1] != 0){
 			
+			// Le jeu commence 
 			while(!(fini)){
 				bzero(messageEnvoi, LG_MESSAGE);
 				bzero(messageRecu, LG_MESSAGE);
 				bzero(codeErreur, 100);
 
+				// C'est au joueur 1 de jouer 
 				if ((i%2 == 0)){
 					// le serveur envoie un message au joueur quand c'est son tour
-					sprintf(messageEnvoi, "Joueur %d, à toi de jouer !\n Le mot à trouver : %s", 1, motCacheJ1);
+					sprintf(messageEnvoi, "Joueur %d, à toi de jouer !\n Le mot à trouver : %s\n", 1, motCacheJ1);
 
 					ecrits = write(clientSocket[i%2] , messageEnvoi , strlen(messageEnvoi));  
 					switch(ecrits){
@@ -227,7 +229,6 @@ int main(int argc, char *argv[]){
 							return 0;
 						default:  /* envoi de n octets */
 							printf("%s\n\n", messageEnvoi);
-					
 					}
 
 					// le serveur récupère la réponse du joueur et fait evoluer son etat du jeu 
@@ -273,6 +274,7 @@ int main(int argc, char *argv[]){
 					
 					bzero(messageEnvoi, 256);
 					bzero(messageRecu, 256);
+
 					// Etat du jeu : 
 					if (tabCompteur[i%2] == 0){
 						sprintf(messageEnvoi, "Joueur %d a perdu, le mot était : %s\n", i%2, motClair);
@@ -303,36 +305,14 @@ int main(int argc, char *argv[]){
 							printf("%s\n\n", messageEnvoi);	
 					}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// ####################################################################################################
+// ####################################################################################################
+// ####################################################################################################
+				// SINON : c'est au joueur 2 de jouer 
 				} else {
 					// le serveur envoie un message au joueur quand c'est son tour
-					sprintf(messageEnvoi, "Joueur %d, à toi de jouer !\n Le mot à trouver : %s", 2, motCacheJ2);
+					sprintf(messageEnvoi, "Joueur %d, à toi de jouer !\n Le mot à trouver : %s\n", 2, motCacheJ2);
 
-					// sprintf(messageEnvoi, "Joueur %d, à toi de jouer !\n", (i%2)+1);
 					ecrits = write(clientSocket[i%2] , messageEnvoi , strlen(messageEnvoi));  
 					switch(ecrits){
 						case -1 : /* une erreur ! */
@@ -438,7 +418,6 @@ int main(int argc, char *argv[]){
 					printf("%s\n\n", messageEnvoi);	
 			} 
 		}
-		// close(socketEcoute);
 	}
 	close(socketEcoute);
 	return 0; 

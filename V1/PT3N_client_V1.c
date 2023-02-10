@@ -114,8 +114,6 @@ int main(int argc, char *argv[]){
 				fprintf(stderr, "La socket a ete fermee par le serveur TEST!\n\n");
 				close(descripteurSocket);
 				return 0;
-			// default: /* envoi de n octets */
-			// 	printf("%s \n\n", messageEnvoi);
 		}	
 
 		bzero(messageEnvoi, 256);
@@ -131,7 +129,6 @@ int main(int argc, char *argv[]){
 				close(descripteurSocket);
 				return 0;
 			default: /* réception de n octets */
-				// printf("Message recu : %s\n", messageRecu);
 				if (messageRecu[6] == ' '){
 					fini = true;
 					printf("%s\n", messageRecu);
